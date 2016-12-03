@@ -22,7 +22,7 @@ class Station(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     slug = Column(String, nullable=False)
-    assets = relationship("Asset", back_populates="station")
+    assets = relationship("Asset", back_populates="station", lazy='dynamic')
 
     def __repr__(self):
         return "<Station({id}/{slug}, name='{name}')>".format(id=self.id, slug=self.slug, name=self.name)
@@ -46,7 +46,10 @@ class Asset(Base):
     plays = relationship("Play", back_populates="asset")
 
     def __repr__(self):
-        return "<Asset({station})>".format(station=self.station)
+        return "<Asset({station}, id={id}, type={type} title='{title}', artist='{artist}')>".format(
+            station=self.station.slug, id=self.id_by_station, type=self.type,
+            title=self.title, artist=self.artist
+        )
 
 class Play(Base):
     __tablename__ = 'plays'
