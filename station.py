@@ -142,9 +142,17 @@ class Station(object):
             type: str<SONG, LINK, SPOT, DEFAULT_METADATA>
             title: str
             artist: str
-            extra_data: Dict
+            album: str optional
+            extra_data: Dict nullable, Extra play data
+            extra_asset_data: Dict nullable, Extra asset data
         }
         """
+        # check if asset exists
+            # if not exists create one
+
+            # TODO: Update outdated assets
+
+        # add asset to plays
         pass
 
     def fetch(self):
@@ -214,10 +222,14 @@ class Greenwave1065(Station):
 
     def parseData(self, data):
         return {
-            'id': data['now']['id'],
+            'id': int(data['now']['id']),
             'type': 'SONG' if data['now']['id'] != 0 else 'DEFAULT_METADATA',
             'title': data['now']['title'],
             'artist': data['now']['artist'],
+            'album': data['now']['album'],
+            'extra_asset_data': {
+                'artwork': data['now']['img'],
+            }
         }
 
 class EDS885(Station):
@@ -233,9 +245,13 @@ class EDS885(Station):
     def parseData(self, data):
         #print(data)
         eventType = data['CueList']['Event'][0]['eventType']
-        artists = ''
+
+        artist_tag = data['CueList']['Event'][0][eventType.title()]['Artist']
+        # TODO: Detect {} or [] in Artist(s)
+        artists = artist_tag['name']
 
         meta = {
+            'id': int(data['CueList']['Event'][0][eventType.title()]['ID']),
             'type': eventType.upper(),
             'title': data['CueList']['Event'][0][eventType.title()]['title'],
             'artist': artists,
