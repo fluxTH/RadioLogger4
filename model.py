@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    Text,
     Enum,
 )
 from sqlalchemy.orm import relationship
@@ -20,8 +21,8 @@ class Station(Base):
     __tablename__ = 'stations'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    slug = Column(String, nullable=False)
+    name = Column(String(50), nullable=False)
+    slug = Column(String(20), nullable=False)
     assets = relationship("Asset", back_populates="station", lazy='dynamic')
 
     def __repr__(self):
@@ -34,11 +35,11 @@ class Asset(Base):
 
     id_by_station = Column(Integer)
     type = Column(Enum('Song', 'Link', 'Spot', 'Unknown', 'Live'), nullable=False)
-    title = Column(String, nullable=False)
-    artist = Column(String, nullable=False)
-    album = Column(String)
+    title = Column(String(255), nullable=False)
+    artist = Column(String(255), nullable=False)
+    album = Column(String(255))
     added = Column(DateTime, default=func.now())
-    extra_data = Column(String)
+    extra_data = Column(Text)
 
     station_id = Column(Integer, ForeignKey('stations.id'))
     station = relationship("Station", back_populates="assets")
@@ -59,7 +60,7 @@ class Play(Base):
     asset_id = Column(Integer, ForeignKey('assets.id'))
     asset = relationship("Asset", back_populates="plays")
 
-    extra_data = Column(String)
+    extra_data = Column(Text)
     timestamp = Column(DateTime, default=func.now())
 
     def __repr__(self):
@@ -70,9 +71,9 @@ class Log(Base):
 
     id = Column(Integer, primary_key=True)
     priority = Column(Enum('Debug', 'Warning', 'Error'), nullable=False)
-    module = Column(String, nullable=False)
-    message = Column(String, nullable=False)
-    extra_data = Column(String)
+    module = Column(String(20), nullable=False)
+    message = Column(String(255), nullable=False)
+    extra_data = Column(Text)
     timestamp = Column(DateTime, default=func.now())
 
     def add_data(self, data):

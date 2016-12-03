@@ -99,7 +99,7 @@ if __name__ == "__main__":
     from sqlalchemy.orm import sessionmaker
 
     DB_STRING = 'sqlite:///log4.db'
-    # DB = 'mysql://'
+    # DB_STRING = 'mysql://fluxth:_@fluxth.mysql.pythonanywhere-services.com/fluxth$radiolog'
     _l('Core', "Connecting to database '{}'".format(DB_STRING), save=False)
     engine = sqlalchemy.create_engine(DB_STRING) # , echo=True)
     Session = sessionmaker(bind=engine)
