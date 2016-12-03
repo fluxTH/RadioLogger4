@@ -73,7 +73,7 @@ class Station(object):
             raise exceptions.DBException('Database engine is not avaliable!')
 
         self._engine = engine
-        self._dbSessMaker = sessionmaker(bind=engine)
+        self._dbSessMaker = sessionmaker(bind=engine, autoflush=False)
         self._dbSess = self._dbSessMaker()
 
         # Add station to DB
