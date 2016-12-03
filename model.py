@@ -36,6 +36,7 @@ class Asset(Base):
     type = Column(Enum('Song', 'Link', 'Spot', 'Unknown', 'Live'), nullable=False)
     title = Column(String, nullable=False)
     artist = Column(String, nullable=False)
+    album = Column(String)
     added = Column(DateTime, default=func.now())
     extra_data = Column(String)
 
