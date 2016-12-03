@@ -24,12 +24,15 @@ class Station(object):
 
     _name = None
     _slug = None
+    _dbObj = None
 
     _endpoint = None
     _postPayload = None
     _dataFormat = 'json'
 
     _engine = None
+    _dbSessMaker = None
+    _dbSess = None
 
     _log = None
     _dblog = None
@@ -47,6 +50,13 @@ class Station(object):
         self.init_logger(log, dblog)
         self._('Station Logger Initialized! (using proxy: {proxy})'.format(proxy=('YES' if self._proxy else 'NO')))
 
+    def init_object(self):
+        if self._name is None:
+            self._name = self.__class__.__name__
+
+        if self._slug is None:
+            self._slug = self.__class__.__name__.lower()
+
     def check_object(self):
         if self._endpoint is None:
             raise exceptions.NotImplementedException('This station does not have an endpoint!')
@@ -56,17 +66,25 @@ class Station(object):
             raise exceptions.DBException('Database engine is not avaliable!')
 
         self._engine = engine
+        self._dbSessMaker = sessionmaker(bind=engine)
+        self._dbSess = self._dbSessMaker()
+
+        # Add station to DB
+        # TODO: Make name changable, identify by slug
+        q = self._dbSess.query(StationModel).filter_by(name=self._name, slug=self._slug)
+
+        if q.count() < 1:
+            station = StationModel(name=self._name, slug=self._slug)
+            self._dbSess.add(station)
+            self._dbSess.commit()
+        else:
+            station = q.first()
+
+        self._dbObj = station
 
     def init_logger(self, log, dblog):
         self._log = log
         self._dblog = dblog
-
-    def init_object(self):
-        if self._name is None:
-            self._name = self.__class__.__name__
-
-        if self._slug is None:
-            self._slug = self.__class__.__name__.lower()
 
     def set_interval(self, interval=60):
         self._queueInterval = interval
@@ -112,6 +130,10 @@ class Station(object):
     def execute(self):
         try:
             data = self.fetch()
+
+            if data is False:
+                return False
+
         except YahooProxyException as e:
             self._('Proxy error! Trying again in 45 seconds', p='Error', data={'details': str(e)})
             self._queueOverride = 45
@@ -130,9 +152,6 @@ class Station(object):
             return False
         finally:
             self._queueRanLast = time.time()
-
-        if data is False:
-            return False
 
         parsed = self.parseData(data)
         print(parsed)
