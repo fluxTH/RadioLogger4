@@ -52,6 +52,7 @@ def _logToDb(module, message, data=None, priority='Debug'):
     log.add_data(data)
     dbsess.add(log)
     dbsess.commit()
+    dbsess.close()
 
 def _l(module, s, data=None, console=True, save=True):
     if save:
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     engine = sqlalchemy.create_engine(DB_STRING) # , echo=True)
     Session = sessionmaker(bind=engine)
 
-    from model import Log
+    from model import Base, Log
 
     # TODO: Check more table other than logs
     if not engine.dialect.has_table(engine, Log.__tablename__):
