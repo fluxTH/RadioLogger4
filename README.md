@@ -1,7 +1,7 @@
-## Radio Logger v4.00
+# Radio Logger v4.0
 
-# Dependancies
+### Dependencies
 - sqlalchemy==1.1.4
 - requests==2.9.1
 
-More details coming soon...
+_More details coming soon..._
