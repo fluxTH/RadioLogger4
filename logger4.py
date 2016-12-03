@@ -103,13 +103,7 @@ if __name__ == "__main__":
     engine = sqlalchemy.create_engine(DB_STRING) # , echo=True)
     Session = sessionmaker(bind=engine)
 
-    from model import (
-        Base,
-        Station,
-        Asset,
-        Play,
-        Log,
-    )
+    from model import Log
 
     # TODO: Check more table other than logs
     if not engine.dialect.has_table(engine, Log.__tablename__):
@@ -135,7 +129,7 @@ if __name__ == "__main__":
         Greenwave1065(engine=engine, log=_, dblog=_logToDb),
         EDS885(engine=engine, log=_, dblog=_logToDb),
         # EFM94(engine=engine, log=_, dblog=_logToDb),
-        # Get1025(engine=engine, log=_, dblog=_logToDb),    
+        # Get1025(engine=engine, log=_, dblog=_logToDb),
     ]
 
     _l('Core', 'Enabled stations ({}): {}'.format(len(stations), ', '.join(s._name for s in stations)))
