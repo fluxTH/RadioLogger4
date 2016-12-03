@@ -1,5 +1,6 @@
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import desc
 from model import (
     Asset,
     Play,
@@ -16,7 +17,9 @@ from requests.exceptions import (
     Timeout
 )
 
+import sqlite3
 import time
+import json
 
 yp = YahooProxy()
 
@@ -46,8 +49,8 @@ class Station(object):
     def __init__(self, engine, log, dblog):
         self.init_object()
         self.check_object()
-        self.init_db(engine)
         self.init_logger(log, dblog)
+        self.init_db(engine)
         self._('Station Logger Initialized! (using proxy: {proxy})'.format(proxy=('YES' if self._proxy else 'NO')))
 
     def init_object(self):
@@ -60,6 +63,10 @@ class Station(object):
     def check_object(self):
         if self._endpoint is None:
             raise exceptions.NotImplementedException('This station does not have an endpoint!')
+
+    def init_logger(self, log, dblog):
+        self._log = log
+        self._dblog = dblog
 
     def init_db(self, engine):
         if engine.__class__ is not Engine:
@@ -74,17 +81,22 @@ class Station(object):
         q = self._dbSess.query(StationModel).filter_by(name=self._name, slug=self._slug)
 
         if q.count() < 1:
+            self._('No DB entry found for this station, creating one...', p='Warning')
             station = StationModel(name=self._name, slug=self._slug)
             self._dbSess.add(station)
+            default_asset = Asset(
+                id_by_station = -1,
+                type = 'Live',
+                station = station,
+                title = 'LIVE',
+                artist = self._name,
+            )
+            self._dbSess.add(default_asset)
             self._dbSess.commit()
         else:
             station = q.first()
 
         self._dbObj = station
-
-    def init_logger(self, log, dblog):
-        self._log = log
-        self._dblog = dblog
 
     def set_interval(self, interval=60):
         self._queueInterval = interval
@@ -157,13 +169,19 @@ class Station(object):
         print(parsed)
 
         # process and save data
-        self.process_data(parsed)
+        try:
+            self.process_data(parsed)
+        except sqlite3.OperationalError:
+            # try again
+            self._('SQLite3 Error! trying again in 10 seconds', p='Error', data={'details': str(e)})
+            self._queueOverride = 10
+            return False
 
         self._queueRanLast = time.time()
 
     def process_data(self, parsed):
         """
-        {
+        parsed = {
             id: int
             type: str<SONG, LINK, SPOT, DEFAULT_METADATA>
             title: str
@@ -173,13 +191,96 @@ class Station(object):
             extra_asset_data: Dict nullable, Extra asset data
         }
         """
-        # check if asset exists
-            # if not exists create one
 
-            # TODO: Update outdated assets
+        assetType = 'Unknown'
+        if parsed['type'] == 'SONG':
+            assetType = 'Song'
+        elif parsed['type'] == 'LINK':
+            assetType = 'Link'
+        elif parsed['type'] == 'SPOT':
+            assetType = 'Spot'
+        elif parsed['type'] == 'DEFAULT_METADATA':
+            assetType = 'Live'
 
-        # add asset to plays
-        pass
+        new_record = False
+
+        if parsed['type'] == 'DEFAULT_METADATA':
+            asset = self._dbObj.assets.filter_by(id_by_station=-1).first()
+            print(asset)
+        else:
+            if 'id' in parsed:
+                # check if asset exists
+                q = self._dbObj.assets.filter_by(id_by_station=parsed['id'])
+                if q.count() < 1:
+                    # if not exists then create one
+                    asset = Asset(
+                        station = self._dbObj,
+                        id_by_station = parsed['id'],
+                        type = assetType,
+                        title = parsed['title'],
+                        artist = parsed['artist'],
+                        album = parsed['album'] if 'album' in parsed else None,
+                        extra_data = json.dumps(parsed['extra_asset_data'], sort_keys=True)
+                            if 'extra_asset_data' in parsed and parsed['extra_asset_data'] != {}
+                            else None,
+                    )
+                    new_record = True
+                else:
+                    asset = q.first()
+            else:
+                # check if asset exists
+                q = self._dbObj.assets.filter_by(title=parsed['title'], artist=parsed['artist'])
+                if q.count() < 1:
+                    # if not exists then create one
+                    asset = Asset(
+                        station = self._dbObj,
+                        id_by_station = None,
+                        type = assetType,
+                        title = parsed['title'],
+                        artist = parsed['artist'],
+                        album = parsed['album'] if 'album' in parsed else None,
+                        extra_data = json.dumps(parsed['extra_asset_data'], sort_keys=True)
+                            if 'extra_asset_data' in parsed and parsed['extra_asset_data'] != {}
+                            else None,
+                    )
+                    new_record = True
+                else:
+                    asset = q.first()
+
+            if new_record:
+                self._dbSess.add(asset)
+                self._dbSess.commit()
+
+        # TODO: Update outdated assets
+
+        # check if duplicate play
+        playq = self._dbSess.query(Play).filter_by(asset=asset).order_by(desc(Play.id)).limit(1)
+        last_play = playq.first()
+        play = Play(
+            asset = asset,
+            extra_data = json.dumps(parsed['extra_data'], sort_keys=True)
+                if 'extra_data' in parsed and parsed['extra_data'] != {}
+                else None,
+        )
+
+        dupe = True
+        if last_play is None:
+            dupe = False
+        else:
+            if 'id' in parsed:
+                if play.asset.id_by_station != last_play.asset.id_by_station:
+                    dupe = False
+            else:
+                if play.asset.title != last_play.asset.title and play.asset.artist != last_play.asset.artist:
+                    dupe = False
+
+        if not dupe:
+            # add asset to plays
+            self._dbSess.add(play)
+            self._dbSess.commit()
+            print('not last')
+        else:
+            print('is last')
 
     def fetch(self):
         # TODO: Make disabling proxy possible
