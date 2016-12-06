@@ -4,13 +4,18 @@
 - `sqlalchemy==1.1.4`
 - `requests==2.9.1`
 
-## Todo List
+## Installation
+_More details coming soon..._
+
+## Usage
+_More details coming soon..._
+
+## Development
+### Todo List
 - [ ] Better exception handling
 - [ ] Add the ability to not use Yahoo proxy
 - [ ] Performance improvement
 - [x] [Bug] Fix duplicate plays
-
-_More details coming soon..._
 
 ## Version History
 ### Beta 4.0 (Radio Logger)
