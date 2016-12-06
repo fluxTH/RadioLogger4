@@ -73,7 +73,7 @@ class Station(object):
             raise exceptions.DBException('Database engine is not avaliable!')
 
         self._engine = engine
-        self._dbSessMaker = sessionmaker(bind=engine, autoflush=False)
+        self._dbSessMaker = sessionmaker(bind=engine, autocommit=True)
         self._dbSess = self._dbSessMaker()
 
         # Add station to DB
@@ -92,7 +92,7 @@ class Station(object):
                 artist = self._name,
             )
             self._dbSess.add(default_asset)
-            self._dbSess.commit()
+            # self._dbSess.commit()
         else:
             station = q.first()
 
@@ -249,7 +249,7 @@ class Station(object):
 
             if new_record:
                 self._dbSess.add(asset)
-                self._dbSess.commit()
+                # self._dbSess.commit()
 
         # TODO: Update outdated assets
 
@@ -278,9 +278,10 @@ class Station(object):
         if not dupe:
             # add asset to plays
             self._dbSess.add(play)
-            self._dbSess.commit()
+            # self._dbSess.commit()
             print('not last')
         else:
+
             print('is last')
 
         return (asset, play)
