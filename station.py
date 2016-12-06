@@ -178,6 +178,7 @@ class Station(object):
             return False
 
         self._queueRanLast = time.time()
+        return True
 
     def process_data(self, parsed):
         """
@@ -206,7 +207,6 @@ class Station(object):
 
         if parsed['type'] == 'DEFAULT_METADATA':
             asset = self._dbObj.assets.filter_by(id_by_station=-1).first()
-            print(asset)
         else:
             if 'id' in parsed:
                 # check if asset exists
@@ -254,8 +254,9 @@ class Station(object):
         # TODO: Update outdated assets
 
         # check if duplicate play
-        playq = self._dbSess.query(Play).filter_by(asset=asset).order_by(desc(Play.id)).limit(1)
+        playq = self._dbSess.query(Play).filter(Play.asset.has(station=self._dbObj)).order_by(desc(Play.id)).limit(1)
         last_play = playq.first()
+
         play = Play(
             asset = asset,
             extra_data = json.dumps(parsed['extra_data'], sort_keys=True)
@@ -281,6 +282,8 @@ class Station(object):
             print('not last')
         else:
             print('is last')
+
+        return (asset, play)
 
     def fetch(self):
         # TODO: Make disabling proxy possible

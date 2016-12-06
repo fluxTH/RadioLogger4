@@ -4,11 +4,11 @@
 - `sqlalchemy==1.1.4`
 - `requests==2.9.1`
 
-- [ ] [Bug] Fix duplicate plays
 ## Todo List
 - [ ] Better exception handling
 - [ ] Add the ability to not use Yahoo proxy
 - [ ] Performance improvement
+- [x] [Bug] Fix duplicate plays
 
 _More details coming soon..._
 
