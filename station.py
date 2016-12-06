@@ -402,6 +402,24 @@ class EFM94(Station):
     _name = '94EFM'
     _slug = '94EFM'
 
+    _endpoint = 'http://api.efm.fm/nowplaying'
+    _dataFormat = 'json'
+
+    def __init__(self, *args, **kwargs):
+        super(EFM94, self).__init__(*args, **kwargs)
+
+    def parseData(self, data):
+        return {
+            'id': int(data['now']['id']),
+            'type': 'SONG' if data['now']['id'] != 0 else 'DEFAULT_METADATA',
+            'title': data['now']['title'],
+            'artist': data['now']['artist'],
+            'album': data['now']['album'],
+            'extra_asset_data': {
+                'artwork': data['now']['img'],
+            }
+        }
+
 class Get1025(Station):
     _name = 'GET 102.5'
     _slug = 'GET1025'
