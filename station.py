@@ -378,8 +378,12 @@ class EDS885(Station):
         eventType = data['CueList']['Event'][0]['eventType']
 
         artist_tag = data['CueList']['Event'][0][eventType.title()]['Artist']
-        # TODO: Detect {} or [] in Artist(s)
-        artists = artist_tag['name']
+        if type(artist_tag) is dict:
+            artists = artist_tag['name']
+        elif type(artist_tag) is list:
+            artists = ', '.join(tag['name'] for tag in artist_tag)
+        else:
+            artists = ''
 
         meta = {
             'id': int(data['CueList']['Event'][0][eventType.title()]['ID']),
