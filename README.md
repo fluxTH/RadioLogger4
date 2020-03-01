@@ -1,4 +1,6 @@
-# Radio Logger v4.0
+# Radio Logger v4.0 (Deprecated)
+
+Newer version -- Radio Logger 5 is now under-development. This version is no longer maintained.
 
 ## Dependencies
 - `sqlalchemy==1.1.4`
